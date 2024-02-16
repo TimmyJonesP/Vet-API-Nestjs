@@ -11,6 +11,7 @@ export class CatsService {
   constructor(
     @InjectRepository(Cat)
     private readonly catRepository: Repository<Cat>,
+
     @InjectRepository(Breed)
     private readonly breedRepository: Repository<Breed>,
   ) {}
@@ -24,10 +25,13 @@ export class CatsService {
       throw new BadRequestException("Breed not found");
     }
 
-    return await this.catRepository.save({
-      ...createCatDto,
-      breed,
+    const cat = this.catRepository.create({
+      name: createCatDto.name,
+      age: createCatDto.age,
+      breed: breed,
     });
+
+    return await this.catRepository.save(cat);
   }
 
   async findAll() {
@@ -39,7 +43,28 @@ export class CatsService {
   }
 
   async update(id: number, updateCatDto: UpdateCatDto) {
-    return await this.catRepository.update(id, updateCatDto);
+    const cat = await this.catRepository.findOneBy({ id });
+
+    if (!cat) {
+      throw new BadRequestException("Cat not found");
+    }
+
+    let breed;
+    if (updateCatDto.breed) {
+      breed = await this.breedRepository.findOneBy({
+        name: updateCatDto.breed,
+      });
+
+      if (!breed) {
+        throw new BadRequestException("Breed not found");
+      }
+    }
+
+    return await this.catRepository.save({
+      ...cat,
+      ...updateCatDto,
+      breed,
+    });
   }
 
   async remove(id: number) {

@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { BadRequestException, Injectable } from "@nestjs/common";
 import { CreateBreedDto } from "./dto/create-breed.dto";
 import { UpdateBreedDto } from "./dto/update-breed.dto";
 import { Breed } from "./entities/breed.entity";
@@ -24,10 +24,23 @@ export class BreedsService {
   }
 
   async update(id: number, updateBreedDto: UpdateBreedDto) {
-    return `This action updates a #${id} breed`;
+    const breed = await this.breedRepository.findOneBy({ id });
+
+    if (!breed) {
+      throw new BadRequestException("Breed not found");
+    }
+    let name;
+    if (updateBreedDto.name) {
+      name = await this.breedRepository.findOneBy({
+        name: updateBreedDto.name,
+      });
+    }
+    return await this.breedRepository.save({
+      name,
+    });
   }
 
   async remove(id: number) {
-    return `This action removes a #${id} breed`;
+    return await this.breedRepository.softDelete(id);
   }
 }

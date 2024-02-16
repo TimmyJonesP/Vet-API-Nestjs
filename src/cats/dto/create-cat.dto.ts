@@ -1,5 +1,5 @@
 import {
-  IsNumber,
+  IsInt,
   IsOptional,
   IsPositive,
   IsString,
@@ -11,7 +11,7 @@ export class CreateCatDto {
   @MinLength(2)
   name: string;
 
-  @IsNumber()
+  @IsInt()
   @IsPositive()
   age: number;
 
