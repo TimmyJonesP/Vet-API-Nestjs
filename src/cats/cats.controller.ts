@@ -10,7 +10,10 @@ import {
 import { CatsService } from "./cats.service";
 import { CreateCatDto } from "./dto/create-cat.dto";
 import { UpdateCatDto } from "./dto/update-cat.dto";
+import { Auth } from "src/common/decorators/auth.decorators";
+import { Role } from "src/common/enums/role.enum";
 
+@Auth(Role.USER)
 @Controller("cats")
 export class CatsController {
   constructor(private readonly catsService: CatsService) {}
