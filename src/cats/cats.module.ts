@@ -5,10 +5,11 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 import { Cat } from "./entities/cat.entity";
 import { BreedsModule } from "src/breeds/breeds.module";
 import { BreedsService } from "src/breeds/breeds.service";
+import { CatValidators } from "src/common/validators/cat.validators";
 
 @Module({
   imports: [TypeOrmModule.forFeature([Cat]), BreedsModule],
   controllers: [CatsController],
-  providers: [CatsService, BreedsService],
+  providers: [CatsService, BreedsService, CatValidators],
 })
 export class CatsModule {}

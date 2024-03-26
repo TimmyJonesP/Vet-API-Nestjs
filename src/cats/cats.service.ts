@@ -1,10 +1,13 @@
-import { BadRequestException, Injectable } from "@nestjs/common";
+import { BadRequestException, Inject, Injectable } from "@nestjs/common";
 import { CreateCatDto } from "./dto/create-cat.dto";
 import { UpdateCatDto } from "./dto/update-cat.dto";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Cat } from "./entities/cat.entity";
 import { Repository } from "typeorm";
-import { Breed } from "src/breeds/entities/breed.entity";
+import { Breed } from "../breeds/entities/breed.entity";
+import { UserActiveInterface } from "../common/interfaces/user-active.interface";
+import { Role } from "../common/enums/role.enum";
+import { CatValidators } from "src/common/validators/cat.validators";
 
 @Injectable()
 export class CatsService {
@@ -14,60 +17,60 @@ export class CatsService {
 
     @InjectRepository(Breed)
     private readonly breedRepository: Repository<Breed>,
+
+    @Inject(CatValidators)
+    private readonly catValidators: CatValidators,
   ) {}
 
-  async create(createCatDto: CreateCatDto) {
-    const breed = await this.breedRepository.findOneBy({
-      name: createCatDto.breed,
-    });
+  async create(createCatDto: CreateCatDto, user: UserActiveInterface) {
+    const breed = await this.catValidators.validateBreed(createCatDto.breed);
 
-    if (!breed) {
-      throw new BadRequestException("Breed not found");
-    }
-
-    const cat = this.catRepository.create({
-      name: createCatDto.name,
-      age: createCatDto.age,
+    return await this.catRepository.save({
+      ...createCatDto,
       breed: breed,
+      userEmail: user.email,
     });
-
-    return await this.catRepository.save(cat);
   }
 
-  async findAll() {
-    return await this.catRepository.find();
+  async findAll(user: UserActiveInterface) {
+    if (user.role === Role.ADMIN) {
+      return await this.catRepository.find();
+    }
+    return await this.catRepository.find({
+      where: { userEmail: user.email },
+    });
   }
 
-  async findOne(id: number) {
-    return await this.catRepository.findOneBy({ id });
-  }
-
-  async update(id: number, updateCatDto: UpdateCatDto) {
+  async findOne(id: number, user: UserActiveInterface) {
     const cat = await this.catRepository.findOneBy({ id });
 
     if (!cat) {
-      throw new BadRequestException("Cat not found");
+      throw new BadRequestException("Cat not found!");
     }
 
-    let breed;
-    if (updateCatDto.breed) {
-      breed = await this.breedRepository.findOneBy({
-        name: updateCatDto.breed,
-      });
+    this.catValidators.validateOwnership(cat, user);
 
-      if (!breed) {
-        throw new BadRequestException("Breed not found");
-      }
-    }
+    return cat;
+  }
 
-    return await this.catRepository.save({
-      ...cat,
+  async update(
+    id: number,
+    updateCatDto: UpdateCatDto,
+    user: UserActiveInterface,
+  ) {
+    await this.findOne(id, user);
+
+    return await this.catRepository.update(id, {
       ...updateCatDto,
-      breed,
+      breed: updateCatDto.breed
+        ? await this.catValidators.validateBreed(updateCatDto.breed)
+        : undefined,
+      userEmail: user.email,
     });
   }
 
-  async remove(id: number) {
+  async remove(id: number, user: UserActiveInterface) {
+    await this.findOne(id, user);
     return await this.catRepository.softDelete({ id });
   }
 }

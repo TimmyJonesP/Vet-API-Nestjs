@@ -1,23 +1,4 @@
-import {
-  IsOptional,
-  IsString,
-  MinLength,
-  IsNumber,
-  IsPositive,
-} from "class-validator";
+import { PartialType } from "@nestjs/mapped-types";
+import { CreateCatDto } from "./create-cat.dto";
 
-export class UpdateCatDto {
-  @IsOptional()
-  @IsString()
-  @MinLength(2)
-  name: string;
-
-  @IsOptional()
-  @IsNumber()
-  @IsPositive()
-  age: number;
-
-  @IsOptional()
-  @IsString()
-  breed?: string;
-}
+export class UpdateCatDto extends PartialType(CreateCatDto) {}
